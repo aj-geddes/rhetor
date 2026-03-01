@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from docx import Document as DocxDocument
 from docx.oxml.ns import qn
@@ -29,7 +30,7 @@ class DocxParser:
         metadata = self._extract_metadata(doc, file_path)
         return ParsedDocument(elements=elements, metadata=metadata)
 
-    def _extract_elements(self, doc: DocxDocument) -> list[TextElement]:
+    def _extract_elements(self, doc: Any) -> list[TextElement]:
         """Iterate paragraphs and tables in document-order via the XML body."""
         elements: list[TextElement] = []
         body = doc.element.body
@@ -96,7 +97,7 @@ class DocxParser:
             return numPr is not None
         return False
 
-    def _extract_metadata(self, doc: DocxDocument, file_path: Path) -> DocumentMetadata:
+    def _extract_metadata(self, doc: Any, file_path: Path) -> DocumentMetadata:
         """Pull metadata from the DOCX core properties."""
         props = doc.core_properties
         title = props.title or file_path.stem

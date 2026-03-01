@@ -42,7 +42,7 @@ class PdfParser:
         """Extract text page-by-page with header/footer filtering."""
         elements: list[TextElement] = []
 
-        for page in doc:
+        for page in doc:  # type: ignore[attr-defined]
             # Check for image-only page
             text = page.get_text("text", sort=True).strip()
             if not text:
@@ -125,7 +125,7 @@ class PdfParser:
             return set()
 
         page_texts: list[set[str]] = []
-        for page in doc:
+        for page in doc:  # type: ignore[attr-defined]
             blocks = page.get_text("dict", sort=True).get("blocks", [])
             lines: set[str] = set()
             for block in blocks:

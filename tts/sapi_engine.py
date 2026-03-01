@@ -6,6 +6,7 @@ import contextlib
 import logging
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from constants import SAPI_BASE_WPM
 from tts.base_engine import TTSEngineNotAvailableError, TTSSynthesisError
@@ -14,7 +15,7 @@ from tts.models import AudioFormat, SynthesisResult, VoiceInfo
 log = logging.getLogger(__name__)
 
 try:
-    import pyttsx3
+    import pyttsx3  # type: ignore[import-untyped]
 
     _PYTTSX3_AVAILABLE = True
 except ImportError:
@@ -25,7 +26,7 @@ class SapiTTSEngine:
     """Tier 3 TTS engine using Windows SAPI5 voices via pyttsx3."""
 
     def __init__(self) -> None:
-        self._engine: object | None = None
+        self._engine: Any = None
 
     @property
     def engine_type(self) -> str:
@@ -58,15 +59,15 @@ class SapiTTSEngine:
         engine = self._ensure_engine()
 
         try:
-            engine.setProperty("voice", voice_id)  # type: ignore[union-attr]
-            engine.setProperty("rate", int(SAPI_BASE_WPM * speed))  # type: ignore[union-attr]
-            engine.setProperty("volume", volume)  # type: ignore[union-attr]
+            engine.setProperty("voice", voice_id)
+            engine.setProperty("rate", int(SAPI_BASE_WPM * speed))
+            engine.setProperty("volume", volume)
 
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                 tmp_path = Path(tmp.name)
 
-            engine.save_to_file(text, str(tmp_path))  # type: ignore[union-attr]
-            engine.runAndWait()  # type: ignore[union-attr]
+            engine.save_to_file(text, str(tmp_path))
+            engine.runAndWait()
 
             audio_data = tmp_path.read_bytes()
         except TTSSynthesisError:
@@ -95,7 +96,7 @@ class SapiTTSEngine:
         except TTSEngineNotAvailableError:
             return []
 
-        voices = engine.getProperty("voices")  # type: ignore[union-attr]
+        voices = engine.getProperty("voices")
         result: list[VoiceInfo] = []
         for voice in voices:
             short_name = voice.id.split("\\")[-1].lower()
@@ -115,7 +116,7 @@ class SapiTTSEngine:
             )
         return result
 
-    def _ensure_engine(self) -> object:
+    def _ensure_engine(self) -> Any:
         """Lazily initialize the pyttsx3 engine."""
         if self._engine is None:
             try:

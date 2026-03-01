@@ -6,6 +6,7 @@ import logging
 import wave
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 from constants import ASSETS_DIR
 from tts.base_engine import TTSEngineNotAvailableError, TTSSynthesisError
@@ -28,7 +29,7 @@ class PiperTTSEngine:
     """Tier 2 TTS engine using Piper's offline ONNX neural models."""
 
     def __init__(self) -> None:
-        self._loaded_voices: dict[str, object] = {}
+        self._loaded_voices: dict[str, Any] = {}
 
     @property
     def engine_type(self) -> str:
@@ -60,7 +61,7 @@ class PiperTTSEngine:
         try:
             buffer = BytesIO()
             with wave.open(buffer, "wb") as wav_file:
-                voice.synthesize(  # type: ignore[union-attr]
+                voice.synthesize(
                     text,
                     wav_file,
                     length_scale=length_scale,
@@ -82,7 +83,7 @@ class PiperTTSEngine:
         catalog = VoiceCatalog()
         return catalog.get_voices_for_engine("piper")
 
-    def _get_or_load_voice(self, voice_id: str, model_path: Path) -> object:
+    def _get_or_load_voice(self, voice_id: str, model_path: Path) -> Any:
         """Load a Piper voice model, caching for reuse."""
         if voice_id not in self._loaded_voices:
             try:

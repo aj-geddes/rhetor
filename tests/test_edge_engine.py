@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -53,7 +54,7 @@ class TestSynthesis:
         mock_communicate = MagicMock()
         mock_edge_tts.Communicate.return_value = mock_communicate
 
-        async def mock_stream() -> None:
+        async def mock_stream() -> AsyncGenerator[dict[str, object], None]:
             yield {"type": "audio", "data": b"\xff\xfb\x90\x00"}
             yield {"type": "audio", "data": b"\x00\x01\x02\x03"}
             yield {"type": "WordBoundary", "data": None}
@@ -87,7 +88,7 @@ class TestSynthesis:
         mock_communicate = MagicMock()
         mock_edge_tts.Communicate.return_value = mock_communicate
 
-        async def mock_stream() -> None:
+        async def mock_stream() -> AsyncGenerator[dict[str, object], None]:
             yield {"type": "WordBoundary", "data": None}
 
         mock_communicate.stream = mock_stream

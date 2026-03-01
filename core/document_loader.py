@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from constants import SUPPORTED_FORMATS
 from core.models import ParsedDocument
-from core.parsers import FileAccessError, UnsupportedFormatError
+from core.parsers import BaseParser, FileAccessError, UnsupportedFormatError
 from core.parsers.docx_parser import DocxParser
 from core.parsers.markdown_parser import MarkdownParser
 from core.parsers.pdf_parser import PdfParser
 from core.parsers.text_parser import TextParser
 
-_PARSER_MAP = {
+_PARSER_MAP: dict[str, Callable[[], BaseParser]] = {
     ".txt": TextParser,
     ".md": MarkdownParser,
     ".docx": DocxParser,
@@ -47,5 +48,5 @@ def load_document(file_path: str | Path) -> ParsedDocument:
         )
 
     parser_cls = _PARSER_MAP[ext]
-    parser = parser_cls()
+    parser: BaseParser = parser_cls()
     return parser.parse(path)

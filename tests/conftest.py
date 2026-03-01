@@ -141,6 +141,7 @@ def pdf_simple(tmp_path: Path) -> Path:
     p = tmp_path / "simple.pdf"
     doc = pymupdf.open()
     page = doc.new_page()
+    assert page is not None
     page.insert_text((72, 72), "Simple PDF Document", fontsize=20)
     page.insert_text((72, 120), "This is the first paragraph of text in the PDF.")
     page.insert_text((72, 145), "This is the second paragraph.")
@@ -155,6 +156,7 @@ def pdf_multipage(tmp_path: Path) -> Path:
     doc = pymupdf.open()
     for i in range(3):
         page = doc.new_page()
+        assert page is not None
         page.insert_text((72, 72), f"Page {i + 1} content.")
     doc.save(str(p))
     doc.close()
@@ -167,6 +169,7 @@ def pdf_empty_page(tmp_path: Path) -> Path:
     doc = pymupdf.open()
     doc.new_page()  # empty page — no text
     page2 = doc.new_page()
+    assert page2 is not None
     page2.insert_text((72, 72), "Page two has text.")
     doc.save(str(p))
     doc.close()
@@ -178,6 +181,7 @@ def pdf_with_metadata(tmp_path: Path) -> Path:
     p = tmp_path / "metadata.pdf"
     doc = pymupdf.open()
     page = doc.new_page()
+    assert page is not None
     page.insert_text((72, 72), "Content here.")
     doc.set_metadata({"title": "My PDF Title", "author": "Jane Doe"})
     doc.save(str(p))
