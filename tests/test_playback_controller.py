@@ -173,6 +173,28 @@ class TestSkipOperations:
         ctrl.skip_back()
         assert ctrl.state == PlaybackState.IDLE
 
+    def test_skip_paragraph_forward_when_idle_is_noop(self) -> None:
+        ctrl = PlaybackController(engine_manager=_make_engine_manager())
+        ctrl.skip_paragraph_forward()
+        assert ctrl.state == PlaybackState.IDLE
+
+    def test_skip_paragraph_back_when_idle_is_noop(self) -> None:
+        ctrl = PlaybackController(engine_manager=_make_engine_manager())
+        ctrl.skip_paragraph_back()
+        assert ctrl.state == PlaybackState.IDLE
+
+    def test_skip_paragraph_forward_without_session_is_noop(self) -> None:
+        ctrl = PlaybackController(engine_manager=_make_engine_manager())
+        ctrl._state = PlaybackState.PLAYING  # force state
+        ctrl.skip_paragraph_forward()
+        # Should not crash — no session loaded
+
+    def test_skip_paragraph_back_without_session_is_noop(self) -> None:
+        ctrl = PlaybackController(engine_manager=_make_engine_manager())
+        ctrl._state = PlaybackState.PLAYING  # force state
+        ctrl.skip_paragraph_back()
+        # Should not crash — no session loaded
+
 
 # ── Shutdown ────────────────────────────────────────────────────────────────
 

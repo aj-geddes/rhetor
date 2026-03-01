@@ -176,6 +176,34 @@ class PlaybackController:
             self._session.go_back()
             self._restart_from_position(self._session.position)
 
+    def skip_paragraph_forward(self) -> None:
+        """Skip to the first chunk of the next paragraph."""
+        with self._lock:
+            if self._state not in (PlaybackState.PLAYING, PlaybackState.PAUSED):
+                return
+            if self._session is None:
+                return
+
+            self._session.skip_to_next_paragraph()
+
+            if self._session.is_finished:
+                self._stop_internal()
+                self._set_state(PlaybackState.FINISHED)
+                return
+
+            self._restart_from_position(self._session.position)
+
+    def skip_paragraph_back(self) -> None:
+        """Skip to the start of the current or previous paragraph."""
+        with self._lock:
+            if self._state not in (PlaybackState.PLAYING, PlaybackState.PAUSED):
+                return
+            if self._session is None:
+                return
+
+            self._session.skip_to_prev_paragraph()
+            self._restart_from_position(self._session.position)
+
     def set_voice(self, voice_id: str) -> None:
         """Change the TTS voice. Takes effect on the next chunk."""
         with self._lock:

@@ -16,7 +16,9 @@ from constants import (
     FORMAT_DESCRIPTIONS,
     MAX_SPEED,
     MIN_SPEED,
+    SPEED_INCREMENT,
     SUPPORTED_FORMATS,
+    VOLUME_INCREMENT,
     WINDOW_TITLE,
 )
 from core.document_loader import load_document
@@ -93,6 +95,11 @@ class RhetorApp:
             return
 
         self._session = ReadingSession(document)
+
+        if self._session.total_chunks == 0:
+            self._main_window.show_empty_document(file_path)
+            return
+
         self._main_window.load_document(document, self._session)
 
         # Load into playback controller
@@ -142,6 +149,56 @@ class RhetorApp:
         """Skip to previous chunk."""
         if self._playback is not None:
             self._playback.skip_back()
+
+    def skip_paragraph_forward(self) -> None:
+        """Skip to the next paragraph."""
+        if self._playback is not None:
+            self._playback.skip_paragraph_forward()
+
+    def skip_paragraph_back(self) -> None:
+        """Skip to the previous paragraph."""
+        if self._playback is not None:
+            self._playback.skip_paragraph_back()
+
+    def increase_speed(self) -> None:
+        """Increase playback speed by one step."""
+        current = self._settings_mgr.settings.reading.speed
+        new_speed = min(MAX_SPEED, current + SPEED_INCREMENT)
+        self.set_speed(new_speed)
+        self._main_window.update_speed_display(new_speed)
+
+    def decrease_speed(self) -> None:
+        """Decrease playback speed by one step."""
+        current = self._settings_mgr.settings.reading.speed
+        new_speed = max(MIN_SPEED, current - SPEED_INCREMENT)
+        self.set_speed(new_speed)
+        self._main_window.update_speed_display(new_speed)
+
+    def increase_volume(self) -> None:
+        """Increase volume by one step."""
+        current = self._settings_mgr.settings.reading.volume
+        new_volume = min(1.0, current + VOLUME_INCREMENT)
+        self.set_volume(new_volume)
+        self._main_window.update_volume_display(new_volume)
+
+    def decrease_volume(self) -> None:
+        """Decrease volume by one step."""
+        current = self._settings_mgr.settings.reading.volume
+        new_volume = max(0.0, current - VOLUME_INCREMENT)
+        self.set_volume(new_volume)
+        self._main_window.update_volume_display(new_volume)
+
+    def toggle_theme(self) -> None:
+        """Toggle between dark and light theme."""
+        appearance = self._settings_mgr.settings.appearance
+        appearance.theme = "light" if appearance.theme == "dark" else "dark"
+        self.apply_settings()
+
+    def open_user_guide(self) -> None:
+        """Open the user guide dialog."""
+        from ui.user_guide import UserGuideDialog
+
+        UserGuideDialog(self._root)
 
     def set_voice(self, voice_id: str) -> None:
         """Change the active voice."""

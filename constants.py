@@ -74,3 +74,9 @@ SAPI_BASE_WPM: int = 200
 # ── Audio Pipeline ──────────────────────────────────────────────────────────
 
 AUDIO_BUFFER_CAPACITY: int = 3
+
+# ── User Guide & Polish ────────────────────────────────────────────────────
+
+SPEED_INCREMENT: float = 0.25
+VOLUME_INCREMENT: float = 0.05
+USER_GUIDE_PATH: Path = ASSETS_DIR / "user_guide.md"

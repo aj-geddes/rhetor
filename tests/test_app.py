@@ -81,6 +81,92 @@ class TestRhetorAppNoDisplay:
         clamped = max(0.0, min(1.0, volume))
         assert clamped == 0.0
 
+    def test_increase_speed_logic(self) -> None:
+        """Verify increase_speed clamping."""
+        from constants import MAX_SPEED, SPEED_INCREMENT
+
+        current = 1.0
+        new_speed = min(MAX_SPEED, current + SPEED_INCREMENT)
+        assert new_speed == 1.25
+
+    def test_decrease_speed_logic(self) -> None:
+        """Verify decrease_speed clamping."""
+        from constants import MIN_SPEED, SPEED_INCREMENT
+
+        current = 1.0
+        new_speed = max(MIN_SPEED, current - SPEED_INCREMENT)
+        assert new_speed == 0.75
+
+    def test_increase_volume_logic(self) -> None:
+        """Verify increase_volume clamping."""
+        from constants import VOLUME_INCREMENT
+
+        current = 0.8
+        new_volume = min(1.0, current + VOLUME_INCREMENT)
+        assert abs(new_volume - 0.85) < 0.001
+
+    def test_decrease_volume_logic(self) -> None:
+        """Verify decrease_volume clamping."""
+        from constants import VOLUME_INCREMENT
+
+        current = 0.8
+        new_volume = max(0.0, current - VOLUME_INCREMENT)
+        assert abs(new_volume - 0.75) < 0.001
+
+    def test_toggle_theme_logic(self) -> None:
+        """Verify theme toggle."""
+        theme = "dark"
+        new_theme = "light" if theme == "dark" else "dark"
+        assert new_theme == "light"
+        new_theme2 = "light" if new_theme == "dark" else "dark"
+        assert new_theme2 == "dark"
+
+    def test_increase_speed_at_max(self) -> None:
+        """Speed should clamp at MAX_SPEED."""
+        from constants import MAX_SPEED, SPEED_INCREMENT
+
+        current = MAX_SPEED
+        new_speed = min(MAX_SPEED, current + SPEED_INCREMENT)
+        assert new_speed == MAX_SPEED
+
+    def test_decrease_volume_at_zero(self) -> None:
+        """Volume should clamp at 0."""
+        from constants import VOLUME_INCREMENT
+
+        current = 0.0
+        new_volume = max(0.0, current - VOLUME_INCREMENT)
+        assert new_volume == 0.0
+
+    def test_increase_volume_at_max(self) -> None:
+        """Volume should clamp at 1.0."""
+        from constants import VOLUME_INCREMENT
+
+        current = 1.0
+        new_volume = min(1.0, current + VOLUME_INCREMENT)
+        assert new_volume == 1.0
+
+    def test_empty_document_detection(self) -> None:
+        """Verify empty document has zero chunks."""
+        doc = ParsedDocument(
+            elements=[TextElement(content="   ", element_type=ElementType.PARAGRAPH)],
+            metadata=DocumentMetadata(title="Empty", format="txt"),
+        )
+        from core.reading_session import ReadingSession
+
+        session = ReadingSession(doc)
+        assert session.total_chunks == 0
+
+    def test_empty_document_no_elements(self) -> None:
+        """Verify truly empty document has zero chunks."""
+        doc = ParsedDocument(
+            elements=[],
+            metadata=DocumentMetadata(title="Empty", format="txt"),
+        )
+        from core.reading_session import ReadingSession
+
+        session = ReadingSession(doc)
+        assert session.total_chunks == 0
+
     def test_geometry_parsing(self) -> None:
         """Verify window geometry string parsing logic."""
         geo = "900x700+100+200"

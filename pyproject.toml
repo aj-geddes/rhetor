@@ -30,6 +30,9 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.10",
 ]
+dnd = [
+    "tkinterdnd2>=0.3.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["core*", "tts*", "audio*", "ui*"]
@@ -54,4 +57,8 @@ disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = "customtkinter.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tkinterdnd2.*"
 ignore_missing_imports = true

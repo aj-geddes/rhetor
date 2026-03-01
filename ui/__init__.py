@@ -5,6 +5,7 @@ from ui.main_window import MainWindow
 from ui.settings_dialog import SettingsDialog
 from ui.status_bar import StatusBar
 from ui.toolbar import Toolbar
+from ui.user_guide import UserGuideDialog
 
 __all__ = [
     "DocumentView",
@@ -12,4 +13,5 @@ __all__ = [
     "SettingsDialog",
     "StatusBar",
     "Toolbar",
+    "UserGuideDialog",
 ]

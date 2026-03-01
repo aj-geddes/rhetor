@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from tkinter import messagebox
 from typing import TYPE_CHECKING
 
 import customtkinter as ctk
@@ -64,6 +65,7 @@ class StatusBar(ctk.CTkFrame):
         self._engine_label.pack(side="right", padx=(4, 8))
 
         self._estimated_total: float = 0.0
+        self._last_error: str = ""
 
     def update_from_event(self, event: PlaybackEvent) -> None:
         """Update the status bar from a playback event."""
@@ -94,8 +96,20 @@ class StatusBar(ctk.CTkFrame):
         self._engine_label.configure(text=text)
 
     def set_error(self, message: str) -> None:
-        """Display an error message in the state label."""
-        self._state_label.configure(text=f"Error: {message[:50]}")
+        """Display an error message in the state label.
+
+        Truncates to 80 chars for display; stores the full message.
+        Click the label to see the full error.
+        """
+        self._last_error = message
+        display = message[:80] + ("..." if len(message) > 80 else "")
+        self._state_label.configure(text=f"Error: {display}")
+        self._state_label.bind("<Button-1>", lambda e: self._show_full_error())
+
+    def _show_full_error(self) -> None:
+        """Show the full error message in a dialog."""
+        if self._last_error:
+            messagebox.showwarning("Error Details", self._last_error)
 
     def reset(self) -> None:
         """Reset the status bar to its initial state."""
@@ -103,3 +117,5 @@ class StatusBar(ctk.CTkFrame):
         self._progress_label.configure(text="")
         self._time_label.configure(text="")
         self._estimated_total = 0.0
+        self._last_error = ""
+        self._state_label.unbind("<Button-1>")

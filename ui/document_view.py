@@ -25,6 +25,7 @@ Supported formats:
 
 Use File > Open or Ctrl+O to open a document.
 Press Space to play/pause, Escape to stop.
+Press F1 to open the User Guide.
 """
 
 
@@ -97,6 +98,25 @@ class DocumentView(ctk.CTkFrame):
         """Change the chunk highlight color."""
         self._highlight_color = color
         self._textbox._textbox.tag_configure("current_chunk", background=color)
+
+    def show_empty_document_message(self, file_path: str) -> None:
+        """Display a message for a document that has no readable text."""
+        from pathlib import Path
+
+        name = Path(file_path).name
+        message = (
+            f"No readable text found in:\n"
+            f"  {name}\n\n"
+            "The file may be empty, scanned, or in an unsupported format.\n"
+        )
+        self._set_text(message)
+
+    def set_drag_highlight(self, active: bool) -> None:
+        """Toggle a visual highlight to indicate drag-and-drop readiness."""
+        if active:
+            self._textbox.configure(border_width=2)
+        else:
+            self._textbox.configure(border_width=0)
 
     def _set_text(self, text: str) -> None:
         """Replace all text in the textbox."""

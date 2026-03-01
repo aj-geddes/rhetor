@@ -105,3 +105,13 @@ class TestDocumentViewWidget:
         doc_view.show_welcome()
         content = doc_view._textbox.get("1.0", "end").strip()
         assert "Open a document" in content
+
+    def test_welcome_mentions_f1(self, doc_view) -> None:  # type: ignore[no-untyped-def]
+        content = doc_view._textbox.get("1.0", "end").strip()
+        assert "F1" in content
+
+    def test_show_empty_document_message(self, doc_view) -> None:  # type: ignore[no-untyped-def]
+        doc_view.show_empty_document_message("/tmp/test.pdf")
+        content = doc_view._textbox.get("1.0", "end").strip()
+        assert "No readable text" in content
+        assert "test.pdf" in content

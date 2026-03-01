@@ -93,6 +93,24 @@ class TestStatusBarWidget:
         status_bar.set_error("something broke")
         assert "Error" in status_bar._state_label.cget("text")
 
+    def test_set_error_truncation(self, status_bar) -> None:  # type: ignore[no-untyped-def]
+        long_message = "A" * 200
+        status_bar.set_error(long_message)
+        text = status_bar._state_label.cget("text")
+        # Error prefix + 80 chars + "..."
+        assert len(text) < 200
+        assert text.endswith("...")
+
+    def test_set_error_stores_full_message(self, status_bar) -> None:  # type: ignore[no-untyped-def]
+        msg = "Full error details here"
+        status_bar.set_error(msg)
+        assert status_bar._last_error == msg
+
+    def test_reset_clears_error(self, status_bar) -> None:  # type: ignore[no-untyped-def]
+        status_bar.set_error("fail")
+        status_bar.reset()
+        assert status_bar._last_error == ""
+
     def test_reset(self, status_bar) -> None:  # type: ignore[no-untyped-def]
         status_bar.set_error("fail")
         status_bar.reset()

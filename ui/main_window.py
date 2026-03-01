@@ -2,14 +2,24 @@
 
 from __future__ import annotations
 
+import logging
 import tkinter as tk
 from collections.abc import Callable
+from pathlib import Path
+from tkinter import messagebox
 from typing import TYPE_CHECKING
 
 import customtkinter as ctk
 
 from audio.models import PlaybackEvent
 from config import AppearanceSettings
+from constants import (
+    APP_AUTHOR,
+    APP_NAME,
+    APP_TAGLINE,
+    APP_VERSION,
+    SUPPORTED_FORMATS,
+)
 from core.models import ParsedDocument, ReadingChunk
 from tts.models import VoiceInfo
 from ui.document_view import DocumentView
@@ -19,6 +29,8 @@ from ui.toolbar import Toolbar
 if TYPE_CHECKING:
     from app import RhetorApp
     from core.reading_session import ReadingSession
+
+log = logging.getLogger(__name__)
 
 
 class MainWindow(ctk.CTkFrame):
@@ -61,7 +73,27 @@ class MainWindow(ctk.CTkFrame):
         self._playback_menu.add_command(
             label="Next Chunk", accelerator="Right", command=self._on_skip_forward
         )
+        self._playback_menu.add_separator()
+        self._playback_menu.add_command(
+            label="Previous Paragraph",
+            accelerator="Ctrl+Left",
+            command=self._on_skip_paragraph_back,
+        )
+        self._playback_menu.add_command(
+            label="Next Paragraph",
+            accelerator="Ctrl+Right",
+            command=self._on_skip_paragraph_forward,
+        )
         self._menu_bar.add_cascade(label="Playback", menu=self._playback_menu)
+
+        # Help menu
+        self._help_menu = tk.Menu(self._menu_bar, tearoff=0)
+        self._help_menu.add_command(
+            label="User Guide", accelerator="F1", command=self._on_user_guide
+        )
+        self._help_menu.add_separator()
+        self._help_menu.add_command(label="About Rhetor", command=self._on_about)
+        self._menu_bar.add_cascade(label="Help", menu=self._help_menu)
 
         # ── Layout ───────────────────────────────────────────────────
 
@@ -92,6 +124,30 @@ class MainWindow(ctk.CTkFrame):
         master.bind("<Escape>", lambda e: self._on_stop())
         master.bind("<Left>", lambda e: self._on_skip_back())
         master.bind("<Right>", lambda e: self._on_skip_forward())
+        master.bind("<Control-Left>", lambda e: self._on_skip_paragraph_back())
+        master.bind("<Control-Right>", lambda e: self._on_skip_paragraph_forward())
+        master.bind("<Control-Up>", lambda e: self._on_increase_speed())
+        master.bind("<Control-Down>", lambda e: self._on_decrease_speed())
+        master.bind("<Up>", self._on_up_key)
+        master.bind("<Down>", self._on_down_key)
+        master.bind("<Control-d>", lambda e: self._on_toggle_theme())
+        master.bind("<Control-comma>", lambda e: self._on_settings())
+        master.bind("<F1>", lambda e: self._on_user_guide())
+
+        # ── Drag and Drop (optional) ─────────────────────────────────
+        self._dnd_enabled = False
+        try:
+            master.tk.eval("package require tkdnd")
+            widget_path = self._document_view._textbox._textbox
+            master.tk.eval(
+                f"tkdnd::drop_target register {widget_path} DND_Files"
+            )
+            widget_path.bind("<<DropEnter>>", self._on_drag_enter)
+            widget_path.bind("<<DropLeave>>", self._on_drag_leave)
+            widget_path.bind("<<Drop>>", self._on_drop)
+            self._dnd_enabled = True
+        except Exception:
+            pass  # DnD silently unavailable
 
     # ── Public API (called by RhetorApp) ──────────────────────────────
 
@@ -149,6 +205,19 @@ class MainWindow(ctk.CTkFrame):
             self._app.open_file(path)
         return _open
 
+    def update_speed_display(self, speed: float) -> None:
+        """Update the toolbar speed display."""
+        self._toolbar.set_speed(speed)
+
+    def update_volume_display(self, volume: float) -> None:
+        """Update the toolbar volume display."""
+        self._toolbar.set_volume(volume)
+
+    def show_empty_document(self, file_path: str) -> None:
+        """Show an empty document message and disable controls."""
+        self._document_view.show_empty_document_message(file_path)
+        self._toolbar.set_controls_enabled(False)
+
     def apply_appearance(self, appearance: AppearanceSettings) -> None:
         """Apply appearance settings to the UI."""
         self._document_view.set_font_size(appearance.font_size)
@@ -179,6 +248,43 @@ class MainWindow(ctk.CTkFrame):
         self._app.play_pause()
         return "break"
 
+    def _on_skip_paragraph_back(self) -> None:
+        self._app.skip_paragraph_back()
+
+    def _on_skip_paragraph_forward(self) -> None:
+        self._app.skip_paragraph_forward()
+
+    def _on_increase_speed(self) -> None:
+        self._app.increase_speed()
+
+    def _on_decrease_speed(self) -> None:
+        self._app.decrease_speed()
+
+    def _on_up_key(self, event: tk.Event) -> str:  # type: ignore[type-arg]
+        """Handle Up key — increase volume and prevent textbox scrolling."""
+        self._app.increase_volume()
+        return "break"
+
+    def _on_down_key(self, event: tk.Event) -> str:  # type: ignore[type-arg]
+        """Handle Down key — decrease volume and prevent textbox scrolling."""
+        self._app.decrease_volume()
+        return "break"
+
+    def _on_toggle_theme(self) -> None:
+        self._app.toggle_theme()
+
+    def _on_user_guide(self) -> None:
+        self._app.open_user_guide()
+
+    def _on_about(self) -> None:
+        """Show the About Rhetor dialog."""
+        messagebox.showinfo(
+            f"About {APP_NAME}",
+            f"{APP_NAME} v{APP_VERSION}\n\n"
+            f"{APP_TAGLINE}\n\n"
+            f"Created by {APP_AUTHOR}",
+        )
+
     def _on_settings(self) -> None:
         """Open the settings dialog."""
         from ui.settings_dialog import SettingsDialog
@@ -186,3 +292,24 @@ class MainWindow(ctk.CTkFrame):
         dialog = SettingsDialog(self._root, self._app)
         dialog.grab_set()
         self._root.wait_window(dialog)
+
+    # ── Drag and Drop handlers ────────────────────────────────────
+
+    def _on_drag_enter(self, event: tk.Event) -> None:  # type: ignore[type-arg]
+        self._document_view.set_drag_highlight(True)
+
+    def _on_drag_leave(self, event: tk.Event) -> None:  # type: ignore[type-arg]
+        self._document_view.set_drag_highlight(False)
+
+    def _on_drop(self, event: tk.Event) -> None:  # type: ignore[type-arg]
+        self._document_view.set_drag_highlight(False)
+        data = str(event.data) if hasattr(event, "data") else ""  # type: ignore[attr-defined]
+        # Parse file path (may be wrapped in braces on some platforms)
+        file_path = data.strip().strip("{}")
+        if not file_path:
+            return
+        ext = Path(file_path).suffix.lower()
+        if ext in SUPPORTED_FORMATS:
+            self._app.open_file(file_path)
+        else:
+            self._status_bar.set_error(f"Unsupported format: {ext}")
