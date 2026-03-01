@@ -19,6 +19,7 @@ dependencies = [
     "edge-tts>=7.2.0",
     "piper-tts>=1.4.0",
     "pyttsx3>=2.90",
+    "pygame>=2.5.0",
 ]
 
 [project.optional-dependencies]

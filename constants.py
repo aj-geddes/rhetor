@@ -70,3 +70,7 @@ CONNECTIVITY_TIMEOUT_S: float = 3.0
 MIN_SPEED: float = 0.5
 MAX_SPEED: float = 2.0
 SAPI_BASE_WPM: int = 200
+
+# ── Audio Pipeline ──────────────────────────────────────────────────────────
+
+AUDIO_BUFFER_CAPACITY: int = 3
