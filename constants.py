@@ -62,3 +62,11 @@ DEFAULT_PARAGRAPH_PAUSE_MS: int = 500
 DEFAULT_SENTENCE_PAUSE_MS: int = 100
 
 MAX_RECENT_FILES: int = 10
+
+# ── TTS Defaults ─────────────────────────────────────────────────────────────
+
+PIPER_MODELS_DIR: Path = ASSETS_DIR / "voices"
+CONNECTIVITY_TIMEOUT_S: float = 3.0
+MIN_SPEED: float = 0.5
+MAX_SPEED: float = 2.0
+SAPI_BASE_WPM: int = 200
