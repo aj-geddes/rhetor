@@ -40,7 +40,11 @@ def _get_config_dir() -> Path:
 CONFIG_DIR: Path = _get_config_dir()
 SETTINGS_FILE: Path = CONFIG_DIR / "settings.json"
 LOG_DIR: Path = CONFIG_DIR / "logs"
-ASSETS_DIR: Path = Path(__file__).resolve().parent / "assets"
+if getattr(sys, "frozen", False):
+    _BASE_DIR = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+else:
+    _BASE_DIR = Path(__file__).resolve().parent
+ASSETS_DIR: Path = _BASE_DIR / "assets"
 
 # ── Text Processing Defaults ─────────────────────────────────────────────────
 

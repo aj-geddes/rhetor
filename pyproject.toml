@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "rhetor"
 version = "1.0.0-dev"
 description = "The Master Orator for Your Documents — a Windows desktop document reader with TTS"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.14"
 license = {text = "Proprietary"}
 authors = [
     {name = "AJ Geddes", email = "aj@highvelocitysolutions.com"},
@@ -29,6 +29,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4.0",
     "mypy>=1.10",
+    "pyinstaller>=6.0",
 ]
 dnd = [
     "tkinterdnd2>=0.3.0",

@@ -66,6 +66,13 @@ def quit_mixer() -> None:
             pygame.mixer.quit()
 
 
+def stop_all_playback() -> None:
+    """Immediately stop any currently playing audio on the mixer."""
+    if _PYGAME_AVAILABLE:
+        with contextlib.suppress(Exception):
+            pygame.mixer.stop()
+
+
 # ── Format mapping ──────────────────────────────────────────────────────────
 
 _FORMAT_MAP = {
@@ -76,6 +83,9 @@ _FORMAT_MAP = {
 
 
 # ── TTSWorker ───────────────────────────────────────────────────────────────
+
+
+TTSSettingsGetter = Callable[[], tuple[str, float, float]]
 
 
 class TTSWorker(threading.Thread):
@@ -92,9 +102,7 @@ class TTSWorker(threading.Thread):
         buffer: AudioBuffer,
         chunks: list[ReadingChunk],
         start_index: int,
-        voice_id: str,
-        speed: float,
-        volume: float,
+        get_settings: TTSSettingsGetter,
         stop_event: threading.Event,
         skip_event: threading.Event,
     ) -> None:
@@ -103,9 +111,7 @@ class TTSWorker(threading.Thread):
         self._buffer = buffer
         self._chunks = chunks
         self._index = start_index
-        self._voice_id = voice_id
-        self._speed = speed
-        self._volume = volume
+        self._get_settings = get_settings
         self._stop_event = stop_event
         self._skip_event = skip_event
 
@@ -126,13 +132,14 @@ class TTSWorker(threading.Thread):
                 continue
 
             chunk = self._chunks[self._index]
+            voice_id, speed, volume = self._get_settings()
 
             try:
                 result = self._engine_manager.synthesize(
                     text=chunk.text,
-                    voice_id=self._voice_id,
-                    speed=self._speed,
-                    volume=self._volume,
+                    voice_id=voice_id,
+                    speed=speed,
+                    volume=volume,
                 )
                 audio_chunk = AudioChunk(
                     audio_data=result.audio_data,

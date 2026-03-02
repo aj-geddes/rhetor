@@ -12,6 +12,7 @@ from audio.audio_thread import (
     init_mixer,
     is_pygame_available,
     quit_mixer,
+    stop_all_playback,
 )
 from audio.buffer import AudioBuffer
 from audio.models import (
@@ -222,7 +223,24 @@ class PlaybackController:
     def shutdown(self) -> None:
         """Stop playback and release all resources."""
         with self._lock:
-            self._stop_internal()
+            self._stop_event.set()
+            stop_all_playback()
+            worker = self._worker
+            player = self._player
+            self._worker = None
+            self._player = None
+
+        # Join outside the lock so player callbacks don't deadlock.
+        if worker is not None:
+            worker.join(timeout=2.0)
+        if player is not None:
+            player.join(timeout=2.0)
+
+        with self._lock:
+            if self._buffer is not None:
+                self._buffer.reset()
+                self._buffer = None
+            self._state = PlaybackState.STOPPED
             if self._mixer_initialized:
                 quit_mixer()
                 self._mixer_initialized = False
@@ -259,6 +277,10 @@ class PlaybackController:
             except Exception:
                 log.exception("Error in playback controller event callback")
 
+    def _get_tts_settings(self) -> tuple[str, float, float]:
+        """Return current (voice_id, speed, volume) for the TTS worker."""
+        return self._voice_id, self._speed, self._volume
+
     def _init_mixer_if_needed(self) -> None:
         if not self._mixer_initialized:
             init_mixer()
@@ -280,9 +302,7 @@ class PlaybackController:
             buffer=self._buffer,
             chunks=self._session.chunks,
             start_index=self._session.position,
-            voice_id=self._voice_id,
-            speed=self._speed,
-            volume=self._volume,
+            get_settings=self._get_tts_settings,
             stop_event=self._stop_event,
             skip_event=self._skip_event,
         )
@@ -300,10 +320,14 @@ class PlaybackController:
         self._player.start()
 
     def _handle_player_event(self, event: PlaybackEvent) -> None:
-        """Forward player events to the controller callback, updating state."""
+        """Forward player events to the controller callback, updating state.
+
+        Called from the AudioPlayer thread — must NOT acquire _lock to avoid
+        deadlock with skip/stop methods that hold _lock while joining threads.
+        Single-field assignment is atomic under the GIL.
+        """
         if event.event_type == PlaybackEventType.STATE_CHANGED:
-            with self._lock:
-                self._state = event.state
+            self._state = event.state
         if (
             event.event_type == PlaybackEventType.POSITION_CHANGED
             and self._session is not None
@@ -322,14 +346,13 @@ class PlaybackController:
 
     def _stop_internal(self) -> None:
         self._stop_event.set()
+        stop_all_playback()
 
-        if self._worker is not None:
-            self._worker.join(timeout=3.0)
-            self._worker = None
-
-        if self._player is not None:
-            self._player.join(timeout=3.0)
-            self._player = None
+        # Don't join daemon threads — they'll exit shortly after seeing
+        # the stop event. Joining on the main thread would freeze the UI
+        # (worker may be blocked in a long TTS synthesis call).
+        self._worker = None
+        self._player = None
 
         if self._buffer is not None:
             self._buffer.reset()
@@ -338,18 +361,26 @@ class PlaybackController:
         self._set_state(PlaybackState.STOPPED)
 
     def _restart_from_position(self, position: int) -> None:
-        """Stop current playback and restart from a new position."""
-        self._stop_event.set()
+        """Stop current playback and restart from a new position.
 
-        if self._worker is not None:
-            self._worker.join(timeout=3.0)
-        if self._player is not None:
-            self._player.join(timeout=3.0)
+        Signals old threads to stop and immediately starts new ones with
+        fresh events. Old daemon threads will exit on their own after
+        seeing their stop event. This avoids blocking the UI thread.
+        """
+        self._stop_event.set()
+        stop_all_playback()
+
+        was_paused = self._state == PlaybackState.PAUSED
+
+        # Create fresh events so old threads (referencing old events)
+        # don't interfere with the new playback cycle.
+        self._stop_event = threading.Event()
+        self._pause_event = threading.Event()
+        self._skip_event = threading.Event()
 
         if self._buffer is not None:
             self._buffer.reset()
 
-        was_paused = self._state == PlaybackState.PAUSED
         self._start_playback()
         if was_paused:
             self._pause_event.set()

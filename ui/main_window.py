@@ -39,7 +39,7 @@ class MainWindow(ctk.CTkFrame):
     def __init__(self, master: ctk.CTk, app: RhetorApp) -> None:
         super().__init__(master)
         self._app = app
-        self._root = master
+        self._root_window = master
 
         # ── Menu Bar (native tkinter) ────────────────────────────────
 
@@ -159,7 +159,7 @@ class MainWindow(ctk.CTkFrame):
         self._status_bar.reset()
         title = document.metadata.title or document.metadata.file_path
         if title:
-            self._root.title(f"{title} — Rhetor")
+            self._root_window.title(f"{title} — Rhetor")
 
     def populate_voices(self, voices: list[VoiceInfo]) -> None:
         """Populate the toolbar voice dropdown."""
@@ -289,9 +289,9 @@ class MainWindow(ctk.CTkFrame):
         """Open the settings dialog."""
         from ui.settings_dialog import SettingsDialog
 
-        dialog = SettingsDialog(self._root, self._app)
+        dialog = SettingsDialog(self._root_window, self._app)
         dialog.grab_set()
-        self._root.wait_window(dialog)
+        self._root_window.wait_window(dialog)
 
     # ── Drag and Drop handlers ────────────────────────────────────
 
